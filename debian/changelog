@@ -1,9 +1,10 @@
-pgrouting (1.05-1~maverick1) maverick; urgency=low
+pgrouting (1.05-1~maverick2) maverick; urgency=low
 
   * Custom build for Maverick release
   * fixed boost/property_map path for includes
+  * Added libcgal5 as dependency
 
- -- Daniel Kastl <daniel@georepublic.de>  Mon, 29 Nov 2010 18:19:42 +0900
+ -- Daniel Kastl <daniel@grp>  Mon, 29 Nov 2010 20:28:43 +0900
 
 pgrouting (1.05-1~lucid1) lucid; urgency=low
 

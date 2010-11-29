@@ -38,7 +38,7 @@ Description: routing functionality support for PostgreSQL 8.4
 
 Package: postgresql-8.4-pgrouting-dd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, postgresql-8.4-pgrouting, libcgal4
+Depends: ${shlibs:Depends}, ${misc:Depends}, postgresql-8.4-pgrouting, libcgal4 | libcgal5
 Suggests: postgresql-8.4-pgrouting-tsp
 Description: routing functionality support for PostgreSQL 8.4
  pgRouting is part of PostLBS, which provides core tools for Location Based Services (LBS) 
