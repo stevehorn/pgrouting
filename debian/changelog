@@ -1,3 +1,13 @@
+pgrouting (1.05-1~lucid1) lucid; urgency=low
+
+  * Imported Upstream version 1.05
+  * Removed patches that have been added in previous build(s)
+    accidentally
+  * Changed naming similar to UbuntuGIS project without "ppa" as part of 
+    package name
+
+ -- Daniel Kastl <daniel@georepublic.de>  Mon, 29 Nov 2010 16:25:52 +0900
+
 pgrouting (1.04-ppa12~lucid1) lucid; urgency=low
 
   * Lucid specific build
