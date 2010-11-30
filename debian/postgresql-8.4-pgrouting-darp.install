@@ -1,0 +1,2 @@
+debian/tmp/usr/lib/postgresql/8.4/lib/librouting_darp.so
+debian/tmp/usr/share/pgrouting/routing_darp.sql
