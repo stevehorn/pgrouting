@@ -1,3 +1,20 @@
+pgrouting (1.6.0-0+1-SNAPSHOT-127.gbpfcd8c6~lucid1) lucid; urgency=low
+
+  ** SNAPSHOT build @fcd8c64bcea7fda56caefd73ddeff787682b1160 **
+
+  [ Daniel Kastl ]
+  * added DARP
+  * set install path to /usr/share/pgrouting
+  * removed CMake generated files
+  * increased version number for DARP to 1.6.0 to be able to overseed 1.05
+  * Added compile flag for DARP
+  * Added DARP install directory configuration
+  * Removed install support for PostgreSQL 8.3
+  * Added DARP package configuration
+  * Modified installation path
+
+ -- Daniel Kastl <daniel@georepublic.de>  Tue, 30 Nov 2010 18:07:48 +0900
+
 pgrouting (1.05-1~lucid1) lucid; urgency=low
 
   * Imported Upstream version 1.05
