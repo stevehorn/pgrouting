@@ -1,7 +1,20 @@
+pgrouting (1.6.0-0+1-SNAPSHOT-136.gbpbdca3d~lucid1) lucid; urgency=low
+
+  ** SNAPSHOT build @bdca3d1cdcf321004ab020f0ad6dfb082b1d7636 **
+
+  [ Daniel Kastl ]
+  * increased minor version number
+  * removed leftover CMake generated files
+  * fixed boost/property_map path for includes
+  * fixed typo in header
+  * added libcgal4 | libcgal5 option as dependency
+
+ -- Daniel Kastl <daniel@georepublic.de>  Tue, 30 Nov 2010 23:54:49 +0900
+
 pgrouting (1.6.0-0+1-SNAPSHOT-127.gbpfcd8c6~lucid1) lucid; urgency=low
 
   ** SNAPSHOT build @fcd8c64bcea7fda56caefd73ddeff787682b1160 **
-
+  
   [ Daniel Kastl ]
   * added DARP
   * set install path to /usr/share/pgrouting
