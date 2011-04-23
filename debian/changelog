@@ -1,3 +1,9 @@
+pgrouting (1.05-1~natty1) natty; urgency=low
+
+  * natty release 
+
+ -- Daniel Kastl <daniel@georepublic.de>  Sat, 23 Apr 2011 14:08:32 +0900
+
 pgrouting (1.05-1~maverick2) maverick; urgency=low
 
   * Custom build for Maverick release
