@@ -1,3 +1,10 @@
+pgrouting (1.05-1~natty1) natty; urgency=low
+
+  * Custom build for Natty release
+  * fixed dependency error in DD: undefined symbol: __gmpq_equal
+
+ -- Daniel Kastl <daniel@georepublic.de>  Fri, 17 Jun 2011 01:19:26 +0900
+
 pgrouting (1.05-1~maverick2) maverick; urgency=low
 
   * Custom build for Maverick release
