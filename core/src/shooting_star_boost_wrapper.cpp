@@ -247,47 +247,43 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
 		
         if (has_reverse_cost)
         {
-          cost = edges_array[j].cost;
-		  reverse_cost = edges_array[j].reverse_cost;
+          cost = edges_array[j].reverse_cost;         
 		  
-		  //If chosen source/target edge's cost is high, take the edge for opposite direction
-		  if(cost > reverse_cost)
-		  {
-			  if(edges_array[j].id == source_edge_id)
-				source_edge_id += e_max_id;
-			  else if(edges_array[j].id == target_edge_id)
-				target_edge_id += e_max_id;
-		  }
+          //If chosen source/target edge's cost is high, take the edge for opposite direction
+          if(cost > reverse_cost)
+          {
+            if(edges_array[j].id == source_edge_id)
+              source_edge_id += e_max_id;
+            else if(edges_array[j].id == target_edge_id)
+              target_edge_id += e_max_id;
+          }
         }
         else
         {
           cost = edges_array[j].cost;
         }
 
-
-      if(adjacent_edges[edges_array[j].id].size() > 0)
-      {
-	    adjacent_edges[edges_array[j].id+e_max_id].assign( adjacent_edges[edges_array[j].id].begin(), adjacent_edges[edges_array[j].id].end() );
-	    adjacent_edges.erase(edges_array[j].id);
-      }
-
+        if(adjacent_edges[edges_array[j].id].size() > 0)
+        {
+          adjacent_edges[edges_array[j].id+e_max_id].assign( adjacent_edges[edges_array[j].id].begin(), adjacent_edges[edges_array[j].id].end() );
+          adjacent_edges.erase(edges_array[j].id);
+        }
 
         graph_add_edge<graph_t, edge_descriptor>(graph, j,
-	                                       edges_array[j].id+e_max_id, edges_array[j].target, 
+                 edges_array[j].id+e_max_id, edges_array[j].target, 
 					       edges_array[j].source, cost, 
 					       edges_array[j].s_x, edges_array[j].s_y, 
 					       edges_array[j].t_x, edges_array[j].t_y, adjacent_edges);
       }
 
-    adjacent_edges.clear();
-    rule_num = 0;
+      adjacent_edges.clear();
+      rule_num = 0;
     }
     else
     {
       rule_num++;
     }
-  }
-  
+  }  
   
   edge_descriptor source_edge;
   edge_descriptor target_edge;
@@ -304,7 +300,6 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
       source_found = true;
       break;
     }
-
   }
 
   if (!source_found) 
