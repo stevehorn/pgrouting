@@ -250,7 +250,7 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
           cost = edges_array[j].reverse_cost;         
 		  
           //If chosen source/target edge's cost is high, take the edge for opposite direction
-          if(cost > reverse_cost)
+          if(edges_array[j].cost > edges_array[j].reverse_cost)
           {
             if(edges_array[j].id == source_edge_id)
               source_edge_id += e_max_id;
@@ -350,8 +350,7 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
 
   } 
   catch(found_goal<edge_descriptor> &fg) 
-  {
-  
+  {  
     vector<edge_descriptor> path_vect;
     int max = MAX_NODES;
     
@@ -360,22 +359,20 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
     path_vect.push_back(target_edge);
     
     while (target_edge != source_edge) 
+    {
+      if ((target_edge == predecessors[graph[target_edge].id]) && (predecessors[graph[target_edge].id] != source_edge))
       {
-        
-        if ((target_edge == predecessors[graph[target_edge].id]) && (predecessors[graph[target_edge].id] != source_edge))
-	{
-          *err_msg = (char *) "No path found";
-          return -1;
-	    
-	}
-  
-	target_edge = predecessors[graph[target_edge].id];
+        *err_msg = (char *) "No path found";
+        return -1;
+      }
+
+      target_edge = predecessors[graph[target_edge].id];
 	
-	//Check if we have u-turns within same edge at the beginning
-	if( !(abs(graph[predecessors[graph[target_edge].id]].id - graph[target_edge].id) == e_max_id && (target_edge != source_edge || predecessors[graph[target_edge].id] != source_edge)) )
-    {   
+      //Check if we have u-turns within same edge at the beginning
+      if( !(abs(graph[predecessors[graph[target_edge].id]].id - graph[target_edge].id) == e_max_id && (target_edge != source_edge || predecessors[graph[target_edge].id] != source_edge)) )
+      {   
         path_vect.push_back(target_edge);
-	}
+      }
 	
 	// This check was made to be sure that we can
 	// restore the path from the target edge within
@@ -383,15 +380,14 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
 	// Sometimes it doesn't work properly and search exits here
 	// even if the target edge was reached.
 
-        if (!max--) 
-	  {
-            *err_msg = (char *) "No path found";
-            return -1;
-	  }	  
-      }
+      if (!max--) 
+      {
+        *err_msg = (char *) "No path found";
+        return -1;
+      }	  
+    }
 
-    *path = (path_element_t *) malloc(sizeof(path_element_t) * 
-				      (path_vect.size() + 1));
+    *path = (path_element_t *) malloc(sizeof(path_element_t) * (path_vect.size() + 1));
     *path_count = path_vect.size();
     
     int start_from = path_vect.size() - 1;
@@ -399,7 +395,7 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
     for(int i = start_from, j = 0; i >= 0; i--, j++)
     {
       float cost;
-	  graph_traits < graph_t >::edge_descriptor e;
+      graph_traits < graph_t >::edge_descriptor e;
 
       e = path_vect.at(i);
       
@@ -418,6 +414,5 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
 
   *err_msg = (char *) "Target was not reached";
   return 0;
-
 }
 
