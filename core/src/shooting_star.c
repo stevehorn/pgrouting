@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *
+ *d
  */
 
 #include "postgres.h"
@@ -268,11 +268,11 @@ fetch_edge_shooting_star(HeapTuple *tuple, TupleDesc *tupdesc,
 
 
 static int compute_shortest_path_shooting_star(char* sql, int source_edge_id, 
-				       int target_edge_id, bool directed, 
+				       char* target_edge_id, bool directed, 
 				       bool has_reverse_cost, 
 				       path_element_t **path, int *path_count) 
 {
-  
+  DBG("1...\n");  
   int SPIcode;
   void *SPIplan;
   Portal SPIportal;
@@ -297,7 +297,7 @@ static int compute_shortest_path_shooting_star(char* sql, int source_edge_id,
   int s_count=0;
   int t_count=0;
   
-  DBG("start shortest_path_shooting_star\n");
+  DBG("!!!start shortest_path_shooting_star\n");
         
   SPIcode = SPI_connect();
   if (SPIcode  != SPI_OK_CONNECT)
@@ -384,45 +384,18 @@ static int compute_shortest_path_shooting_star(char* sql, int source_edge_id,
 
     DBG("E : %i <-> %i", e_min_id, e_max_id);
 
-  for(z=0; z<total_tuples; ++z)
-  {
-
-    //check if edges[] contains source and target
-    if(edges[z].id == source_edge_id || 
-       edges[z].id == source_edge_id)
-      ++s_count;
-    if(edges[z].id == target_edge_id || 
-       edges[z].id == target_edge_id)
-      ++t_count;
-
-
-    //edges[z].source-=v_min_id;
-    //edges[z].target-=v_min_id;
-    
-  }
-    
   DBG("Total %i tuples", total_tuples);
-
-  if(s_count == 0)
-  {
-    elog(ERROR, "Start edge was not found.");
-    return -1;
-  }
-	      
-  if(t_count == 0)
-  {
-    elog(ERROR, "Target edge was not found.");
-    return -1;
-  }
-			    
+   
   DBG("Total %i tuples", total_tuples);
 
   DBG("Calling boost_shooting_star <%i>\n", total_tuples);
 
   //time_t stime = time(NULL);    
+  
+  DBG("pie is good %i", source_edge_id);
 
   ret = boost_shooting_star(edges, total_tuples, source_edge_id, 
-		    target_edge_id,
+		    (char*)target_edge_id,
 		    directed, has_reverse_cost,
 		    path, path_count, &err_msg, e_max_id);
 
@@ -453,24 +426,25 @@ shortest_path_shooting_star(PG_FUNCTION_ARGS)
   int                  max_calls;
   TupleDesc            tuple_desc;
   path_element_t      *path;
-  
+DBG("wooot");  
   /* stuff done only on the first call of the function */
   if (SRF_IS_FIRSTCALL())
     {
       MemoryContext   oldcontext;
       int path_count = 0;
       int ret;
-
+DBG("wooot1");  
       /* create a function context for cross-call persistence */
       funcctx = SRF_FIRSTCALL_INIT();
       
       /* switch to memory context appropriate for multiple function calls */
       oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
-
+DBG("wooot2");  
       ret = compute_shortest_path_shooting_star(text2char(PG_GETARG_TEXT_P(0)),
 					PG_GETARG_INT32(1),
-					PG_GETARG_INT32(2),
+					//PG_GETARG_INT32(2),
+					text2char(PG_GETARG_TEXT_P(2)),
 					PG_GETARG_BOOL(3),
 					PG_GETARG_BOOL(4), 
 					&path, &path_count);
@@ -485,6 +459,7 @@ shortest_path_shooting_star(PG_FUNCTION_ARGS)
 	      DBG("Step # %i vertex_id  %i ", i, path[i].vertex_id);
 	      DBG("        edge_id    %i ", path[i].edge_id);
 	      DBG("        cost       %f ", path[i].cost);
+	      DBG("        target     %i", path[i].target);
             }
         }
 #endif
@@ -497,7 +472,7 @@ shortest_path_shooting_star(PG_FUNCTION_ARGS)
       DBG("Path count %i", path_count);
       
       funcctx->tuple_desc = 
-	BlessTupleDesc(RelationNameGetTupleDesc("path_result"));
+	BlessTupleDesc(RelationNameGetTupleDesc("path_result_with_target"));
 
       MemoryContextSwitchTo(oldcontext);
     }
@@ -535,8 +510,8 @@ shortest_path_shooting_star(PG_FUNCTION_ARGS)
       nulls[3] = ' ';
       */
 		    
-      values = palloc(3 * sizeof(Datum));
-      nulls = palloc(3 * sizeof(char));
+      values = palloc(4 * sizeof(Datum));
+      nulls = palloc(4 * sizeof(char));
 
       values[0] = Int32GetDatum(path[call_cntr].vertex_id);
       nulls[0] = ' ';
@@ -544,6 +519,8 @@ shortest_path_shooting_star(PG_FUNCTION_ARGS)
       nulls[1] = ' ';
       values[2] = Float8GetDatum(path[call_cntr].cost);
       nulls[2] = ' ';
+      values[3] = Int32GetDatum(path[call_cntr].target);
+      nulls[3] = ' ';
  						      
       tuple = heap_formtuple(tuple_desc, values, nulls);
       

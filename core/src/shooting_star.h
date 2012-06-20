@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *
+ *d
  */
 
 #define _SHOOTING_STAR_H
@@ -50,6 +50,7 @@ typedef struct path_element
   int vertex_id;
   int edge_id;
   float8 cost;
+  int target;
 } path_element_t;
 
 #ifdef __cplusplus
@@ -57,7 +58,7 @@ extern "C"
 {
 #endif
   int boost_shooting_star(edge_shooting_star_t *edges, unsigned int count, 
-                  int source_edge_id, int target_edge_id,
+                  int source_edge_id, char* target_edge_id,
                   bool directed, bool has_reverse_cost,
                   path_element_t **path, int *path_count, char **err_msg,
 		  int e_max_id);

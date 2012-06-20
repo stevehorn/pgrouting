@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *
+ *d
  */
 
 #include <boost/config.hpp>
@@ -24,6 +24,8 @@
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/property_map/vector_property_map.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <shooting_star_search.hpp>
 
 #include "shooting_star.h"
@@ -45,6 +47,14 @@ struct Edge
   default_color_type color;
   
   std::size_t index;
+};
+
+struct EdgeResult
+{
+  int vertex_id;
+  int edge_id;
+  float8 cost;
+  int target;
 };
 	
 struct Vertex
@@ -173,11 +183,17 @@ graph_add_edge(G &graph, int index,
 // calculates a route and return a result.
 int 
 boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count, 
-	    int source_edge_id, int target_edge_id,
+	    int source_edge_id, char* target_edge_ids,
 	    bool directed, bool has_reverse_cost,
 	    path_element_t **path, int *path_count, char **err_msg, int e_max_id)
 {
-
+  std::vector<EdgeResult> all_edge_results;
+  std::vector<std::string> target_edge_ids_vect;
+  std::string asString(target_edge_ids);
+  
+  boost::split(target_edge_ids_vect, asString, boost::is_any_of(","));
+  
+ 
   typedef adjacency_list<vecS, vecS, directedS, Vertex, Edge> graph_t;
 
   typedef graph_traits < graph_t >::vertex_descriptor vertex_descriptor;
@@ -231,31 +247,31 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
       adjacent_edges[edges_array[j].id].push_back(std::pair<float8, vector<int> > (edges_array[j].to_cost, rule) );
       rule.clear();
     }
-
+    
     if((j < count-1 && edges_array[j].id != edges_array[j+1].id)||(j==count-1))
     {
       graph_add_edge<graph_t, edge_descriptor>(graph, j,
-					       edges_array[j].id, edges_array[j].source, 
-					       edges_array[j].target, edges_array[j].cost, 
-					       edges_array[j].s_x, edges_array[j].s_y, 
-					       edges_array[j].t_x, edges_array[j].t_y, adjacent_edges);
+                 edges_array[j].id, edges_array[j].source, 
+                 edges_array[j].target, edges_array[j].cost, 
+                 edges_array[j].s_x, edges_array[j].s_y, 
+                 edges_array[j].t_x, edges_array[j].t_y, adjacent_edges);
     
       // if the edge is not directed or if it is directed and has reverse cost
       if (!directed || (directed && has_reverse_cost))
       {
         float8 cost, reverse_cost;
-		
+    
         if (has_reverse_cost)
         {
           cost = edges_array[j].reverse_cost;         
-		  
+      
           //If chosen source/target edge's cost is high, take the edge for opposite direction
           if(edges_array[j].cost > edges_array[j].reverse_cost)
           {
-            if(edges_array[j].id == source_edge_id)
-              source_edge_id += e_max_id;
-            else if(edges_array[j].id == target_edge_id)
-              target_edge_id += e_max_id;
+            // if(edges_array[j].id == source_edge_id)
+              // source_edge_id += e_max_id;
+            // else if(edges_array[j].id == target_edge_id)
+              // target_edge_id += e_max_id;
           }
         }
         else
@@ -271,9 +287,9 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
 
         graph_add_edge<graph_t, edge_descriptor>(graph, j,
                  edges_array[j].id+e_max_id, edges_array[j].target, 
-					       edges_array[j].source, cost, 
-					       edges_array[j].s_x, edges_array[j].s_y, 
-					       edges_array[j].t_x, edges_array[j].t_y, adjacent_edges);
+                 edges_array[j].source, cost, 
+                 edges_array[j].s_x, edges_array[j].s_y, 
+                 edges_array[j].t_x, edges_array[j].t_y, adjacent_edges);
       }
 
       adjacent_edges.clear();
@@ -284,134 +300,180 @@ boost_shooting_star(edge_shooting_star_t *edges_array, unsigned int count,
       rule_num++;
     }
   }  
-  
-  edge_descriptor source_edge;
-  edge_descriptor target_edge;
-  
-  bool source_found = false, target_found = false;
-  
-  graph_traits<graph_t>::edge_iterator ei, ei_end;
-
-  for(tie(ei, ei_end) = edges(graph); ei != ei_end; ++ei) 
-  {
-    if(graph[*ei].id == source_edge_id || graph[*ei].id == source_edge_id - e_max_id)
-    {
-      source_edge = *ei;
-      source_found = true;
-      break;
-    }
-  }
-
-  if (!source_found) 
-  {
-    *err_msg = (char *) "Source edge not found";
-    return -2;
-  }
-
-
-  for(tie(ei, ei_end) = edges(graph); ei != ei_end; ++ei) 
-  {
-    if(graph[*ei].id == target_edge_id || graph[*ei].id == target_edge_id - e_max_id)
-    {
-      target_edge = *ei;
-      target_found = true;
-      break;
-    }
-  }
-
-
-  if (!target_found)
-  {
-    *err_msg = (char *) "Target edge not found";
-    return -3;
-  }
-
-  property_map<graph_t, std::size_t Edge::*>::type edge_index = get(&Edge::index, graph);
-
-  std::map< int, edge_descriptor, std::less<int> > predecessors;
-  
-  property_map<graph_t, float Edge::*>::type rank = get(&Edge::rank, graph);
-  property_map<graph_t, float Edge::*>::type distance = get(&Edge::distance, graph);
-
-  try 
-  {
-    //calling Shooting* search
-    shooting_star_search
-      (graph, source_edge,
-       distance_heuristic<graph_t, float>(graph, target_edge),
-       weight_map(get(&Edge::cost, graph)).
-       weight_map2(get(&Edge::adjacent_edges, graph)).
-       edge_color_map(get(&Edge::color, graph)).
-       visitor(shooting_star_goal_visitor<edge_descriptor>(target_edge, e_max_id)),
-       edge_index,
-       distance, rank,
-       predecessors, e_max_id
-       );
-
-  } 
-  catch(found_goal<edge_descriptor> &fg) 
-  {  
-    vector<edge_descriptor> path_vect;
-    int max = MAX_NODES;
     
-    target_edge = fg.get_target();
-
-    path_vect.push_back(target_edge);
+  for(int ii = 0; ii < target_edge_ids_vect.size(); ii++)
+  {    
+    int controlled_target_edge_id = boost::lexical_cast<int>(target_edge_ids_vect[ii]);
+    int target_edge_id = boost::lexical_cast<int>(target_edge_ids_vect[ii]); 
     
-    while (target_edge != source_edge) 
+    //moved loop from above here
+    for (std::size_t j = 0; j < count; ++j)    
     {
-      if ((target_edge == predecessors[graph[target_edge].id]) && (predecessors[graph[target_edge].id] != source_edge))
-      {
-        *err_msg = (char *) "No path found";
-        return -1;
+      if((j < count-1 && edges_array[j].id != edges_array[j+1].id)||(j==count-1))
+      {  
+        if (!directed || (directed && has_reverse_cost))
+        {    
+          if (has_reverse_cost)
+          {      
+            if(edges_array[j].cost > edges_array[j].reverse_cost)
+            {            
+              if(edges_array[j].id == source_edge_id)
+                source_edge_id += e_max_id;
+              else if(edges_array[j].id == target_edge_id)
+                target_edge_id += e_max_id;
+            }
+          }
+        }
       }
+    }    
+    
+    edge_descriptor source_edge;
+    edge_descriptor target_edge;
+    
+    bool source_found = false, target_found = false;
+    
+    graph_traits<graph_t>::edge_iterator ei, ei_end;
 
-      target_edge = predecessors[graph[target_edge].id];
-	
-      //Check if we have u-turns within same edge at the beginning
-      if( !(abs(graph[predecessors[graph[target_edge].id]].id - graph[target_edge].id) == e_max_id && (target_edge != source_edge || predecessors[graph[target_edge].id] != source_edge)) )
-      {   
-        path_vect.push_back(target_edge);
-      }
-	
-	// This check was made to be sure that we can
-	// restore the path from the target edge within
-	// MAX_NODE iterations.
-	// Sometimes it doesn't work properly and search exits here
-	// even if the target edge was reached.
-
-      if (!max--) 
+    for(tie(ei, ei_end) = edges(graph); ei != ei_end; ++ei) 
+    {
+      if(graph[*ei].id == source_edge_id || graph[*ei].id == source_edge_id - e_max_id)
       {
-        *err_msg = (char *) "No path found";
-        return -1;
-      }	  
+        source_edge = *ei;
+        source_found = true;
+        break;
+      }
     }
 
-    *path = (path_element_t *) malloc(sizeof(path_element_t) * (path_vect.size() + 1));
-    *path_count = path_vect.size();
-    
-    int start_from = path_vect.size() - 1;
-    
-    for(int i = start_from, j = 0; i >= 0; i--, j++)
+    if (!source_found) 
     {
-      float cost;
-      graph_traits < graph_t >::edge_descriptor e;
+      *err_msg = (char *) "Source edge not found";
+      return -2;
+    }
 
-      e = path_vect.at(i);
+    for(tie(ei, ei_end) = edges(graph); ei != ei_end; ++ei) 
+    {
+      if(graph[*ei].id == target_edge_id || graph[*ei].id == target_edge_id - e_max_id)
+      {
+        target_edge = *ei;
+        target_found = true;
+        break;
+      }
+    }
+
+    if (!target_found)
+    {
+      *err_msg = (char *) "Target edge not found";
+      return -3;
+    }
+    
+  
+    
+
+    property_map<graph_t, std::size_t Edge::*>::type edge_index = get(&Edge::index, graph);
+
+    std::map< int, edge_descriptor, std::less<int> > predecessors;
+    
+    property_map<graph_t, float Edge::*>::type rank = get(&Edge::rank, graph);
+    property_map<graph_t, float Edge::*>::type distance = get(&Edge::distance, graph);
+
+    try 
+    {
+      //calling Shooting* search
+      shooting_star_search
+        (graph, source_edge,
+         distance_heuristic<graph_t, float>(graph, target_edge),
+         weight_map(get(&Edge::cost, graph)).
+         weight_map2(get(&Edge::adjacent_edges, graph)).
+         edge_color_map(get(&Edge::color, graph)).
+         visitor(shooting_star_goal_visitor<edge_descriptor>(target_edge, e_max_id)),
+         edge_index,
+         distance, rank,
+         predecessors, e_max_id
+         );
+
+    } 
+    catch(found_goal<edge_descriptor> &fg) 
+    {  
+      vector<edge_descriptor> path_vect;
+      int max = MAX_NODES;
       
-      if(graph[e].id > e_max_id)
+      target_edge = fg.get_target();
+
+      path_vect.push_back(target_edge);
+      
+      while (target_edge != source_edge) 
       {
-        graph[e].id -= e_max_id;
+        if ((target_edge == predecessors[graph[target_edge].id]) && (predecessors[graph[target_edge].id] != source_edge))
+        {
+          *err_msg = (char *) "No path found";
+          return -1;
+        }
+
+        target_edge = predecessors[graph[target_edge].id];
+    
+        //Check if we have u-turns within same edge at the beginning
+        if( !(abs(graph[predecessors[graph[target_edge].id]].id - graph[target_edge].id) == e_max_id && (target_edge != source_edge || predecessors[graph[target_edge].id] != source_edge)) )
+        {   
+          path_vect.push_back(target_edge);
+        }
+    
+    // This check was made to be sure that we can
+    // restore the path from the target edge within
+    // MAX_NODE iterations.
+    // Sometimes it doesn't work properly and search exits here
+    // even if the target edge was reached.
+
+        if (!max--) 
+        {
+          *err_msg = (char *) "No path found";
+          return -1;
+        }	  
       }
       
-      (*path)[j].edge_id = graph[e].id;
-      (*path)[j].cost = graph[e].cost;
-      (*path)[j].vertex_id = source(e, graph);
+
+      
+      int start_from = path_vect.size() - 1;
+      
+      for(int i = start_from, j = 0; i >= 0; i--, j++)
+      {
+        float cost;
+        graph_traits < graph_t >::edge_descriptor e;
+
+        e = path_vect.at(i);
+        
+        int reportedGraphId = 0;
+        
+        if(graph[e].id > e_max_id)
+        {
+          reportedGraphId = (graph[e].id - e_max_id);
+          //graph[e].id -= e_max_id;
+        } else 
+        {
+          reportedGraphId = graph[e].id;
+        }
+        struct EdgeResult temp =
+                   { source(e, graph), reportedGraphId, graph[e].cost, controlled_target_edge_id };
+        all_edge_results.push_back(temp);
+      }        
     }
-
-    return EXIT_SUCCESS;
+  } //End main loop
+  
+  *path = (path_element_t *) malloc(sizeof(path_element_t) * (all_edge_results.size() + 1));
+  *path_count = all_edge_results.size();
+  
+  for(int i = 0; i < all_edge_results.size(); i++)
+  {
+    (*path)[i].edge_id = all_edge_results[i].edge_id;
+    (*path)[i].cost = all_edge_results[i].cost;
+    (*path)[i].vertex_id = all_edge_results[i].vertex_id;
+    (*path)[i].target = all_edge_results[i].target;
   }
+        
 
+  
+
+  
+  return EXIT_SUCCESS;
   *err_msg = (char *) "Target was not reached";
   return 0;
 }
